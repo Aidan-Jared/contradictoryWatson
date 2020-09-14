@@ -31,6 +31,5 @@ if __name__ == "__main__":
                                                                 batch_sizes=(16,256)
                                                             )
 
-    TEXT.build_vocab(train.prem)
-    TEXT.build_vocab(train.hyp)
+    TEXT.build_vocab(train)
     print('here')
