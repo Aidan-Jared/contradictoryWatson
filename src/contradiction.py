@@ -26,13 +26,13 @@ if __name__ == "__main__":
                                                     fields=fields
                                                 )
 
+    TEXT.build_vocab(train)
+    TRG.build_vocab(train.label)
+    
     train_iter, test_iter = torchtext.data.BucketIterator.splits(
                                                                 (train, test),
                                                                 batch_sizes=(16,256)
                                                             )
-
-    TEXT.build_vocab(train)
-    
 
     INPUT_DIM = len(TEXT.vocab)
     OUTPUT_DIM = 3
