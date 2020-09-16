@@ -32,4 +32,7 @@ if __name__ == "__main__":
                                                             )
 
     TEXT.build_vocab(train)
-    print('here')
+    
+
+    INPUT_DIM = len(TEXT.vocab)
+    OUTPUT_DIM = 3
