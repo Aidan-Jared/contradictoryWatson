@@ -16,7 +16,7 @@ class Embeder(nn.Module):
 
 class PositionalEncoder(nn.Module):
     # the words position
-    def __init__(self, d_model, max_seq_len = 80):
+    def __init__(self, d_model, max_seq_len = 300):
         super().__init__()
         self.d_model = d_model
 
@@ -193,6 +193,7 @@ class Transformer(nn.Module):
         self.encoder = Encoder(src_vocab, d_model, N, heads)
         self.decoder = Decoder(src_vocab, d_model, N, heads)
         self.out = nn.Linear(d_model, output_dim)
+        self.norm = Norm(output_dim)
         self.input_pad = input_pad
     
     def forward(self, src, trg):
@@ -201,6 +202,7 @@ class Transformer(nn.Module):
         e_ouputs = self.encoder(src, prm_mask)
         d_output = self.decoder(trg, e_ouputs, prm_mask, hyp_mask)
         output = self.out(d_output)
+        output = self.norm(torch.sum(output, 1))
         return output
 
     def _src_mask(self, batch):
