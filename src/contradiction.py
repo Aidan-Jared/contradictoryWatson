@@ -56,7 +56,8 @@ def evaluate(model, iterator):
             output = model(prem, hyp)
             output = F.softmax(output)
             val, ix = output[:-1].data.topk(1)
-            res.append(TRG.vocab.stoi[ix])
+            for i in ix:
+                res.append(TRG.vocab.itos[i])
     return res
 
 if __name__ == "__main__":
@@ -90,7 +91,7 @@ if __name__ == "__main__":
     OUTPUT_DIM = len(TRG.vocab)
     d_model = 512
     heads = 8
-    N = 1
+    N = 5
     PAD_IDX = TEXT.vocab.stoi['<pad>']
 
     model = Transformer(INPUT_DIM, OUTPUT_DIM, d_model, N, heads, PAD_IDX)
@@ -117,4 +118,4 @@ if __name__ == "__main__":
         print(f'Epoch: {epoch+1:02} | Time: {epoch_mins}m {epoch_secs}s')
         print(f'\tTrain Loss: {train_loss:.3f} | Train PPL: {math.exp(train_loss):7.3f}')
 
-    results = evaluate(model, train)
+    results = evaluate(model, train_iter)
