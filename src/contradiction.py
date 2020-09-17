@@ -14,7 +14,7 @@ import spacy
 nlp = spacy.load("xx_ent_wiki_sm")
 
 def tokenizer(doc):
-    tokens = [x.text for x in nlp.tokenizer(doc) if x.text != ' ']
+    tokens = [x.text for x in nlp.tokenizer(doc) if not x.is_space]
     return tokens
 
 def train_model(model, iterator, optimizer, criterion, clip):
@@ -28,8 +28,6 @@ def train_model(model, iterator, optimizer, criterion, clip):
         
         optimizer.zero_grad()
         output = model(prem, hyp)
-
-        # output = output.view(-1, output.shape[-1])
 
         loss = criterion(output, trg)
         loss.backward()
@@ -57,7 +55,7 @@ if __name__ == "__main__":
     TRG = Field(sequential=False)
     fields = [('id', TRG), ('prem', TEXT), ('hyp', TEXT), ('lang_a', TEXT), ('lang', TRG), ('label', TRG)]
 
-    train, test = torchtext.data.TabularDataset.splits(
+    train_data, test_data = torchtext.data.TabularDataset.splits(
                                                     path='data/',
                                                     train='train.csv',
                                                     test='test.csv',
@@ -66,11 +64,11 @@ if __name__ == "__main__":
                                                     fields=fields
                                                 )
 
-    TEXT.build_vocab(train)
-    TRG.build_vocab(train.label)
+    TEXT.build_vocab(train_data)
+    TRG.build_vocab(train_data.label)
     
     train_iter, test_iter = torchtext.data.BucketIterator.splits(
-                                                                (train, test),
+                                                                (train_data, test_data),
                                                                 batch_sizes=(16,256)
                                                             )
 
