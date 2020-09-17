@@ -201,8 +201,8 @@ class Transformer(nn.Module):
         hyp_mask = self._src_mask(trg)
         e_ouputs = self.encoder(src, prm_mask)
         d_output = self.decoder(trg, e_ouputs, prm_mask, hyp_mask)
-        output = self.out(d_output)
-        output = self.norm(torch.sum(output, 1))
+        cls_output = d_output[:,0]
+        output = self.out(cls_output)
         return output
 
     def _src_mask(self, batch):
