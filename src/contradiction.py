@@ -9,6 +9,13 @@ import numpy as np
 import pandas as pd
 import math
 import time
+import spacy
+
+nlp = spacy.load("xx_ent_wiki_sm")
+
+def tokenizer(doc):
+    tokens = [x.text for x in nlp.tokenizer(doc) if x.text != ' ']
+    return tokens
 
 def train_model(model, iterator, optimizer, criterion, clip):
     model.train()
@@ -41,15 +48,14 @@ def epoch_time(start_time, end_time):
 
 
 if __name__ == "__main__":
+    
     TEXT = Field(
-                tokenize= 'spacy',
-                tokenizer_language= "xx_ent_wiki_sm",
-                init_token= '<sos>',
-                eos_token= '<eos>',
-                lower= True)
+                tokenize= tokenizer,
+                init_token= '<cls>',
+                eos_token= '<sep>')
     
     TRG = Field(sequential=False)
-    fields = [('id', TRG), ('prem', TEXT), ('hyp', TEXT), ('lang_a', TRG), ('lang', TRG), ('label', TRG)]
+    fields = [('id', TRG), ('prem', TEXT), ('hyp', TEXT), ('lang_a', TEXT), ('lang', TRG), ('label', TRG)]
 
     train, test = torchtext.data.TabularDataset.splits(
                                                     path='data/',
