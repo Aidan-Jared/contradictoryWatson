@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 import torch.optim as optim
 import torchtext
 from torchtext.data import Field
@@ -44,6 +45,19 @@ def epoch_time(start_time, end_time):
     elapsed_secs = int(elapsed_time - (elapsed_mins * 60))
     return elapsed_mins, elapsed_secs
 
+def evaluate(model, iterator):
+    model.eval()
+    res = []
+    with torch.no_grad():
+        for _,batch in enumerate(iterator):
+            prem = batch.prem.transpose(0,1)
+            hyp = batch.hyp.transpose(0,1)
+
+            output = model(prem, hyp)
+            output = F.softmax(output)
+            val, ix = output[:-1].data.topk(1)
+            res.append(TRG.vocab.stoi[ix])
+    return res
 
 if __name__ == "__main__":
     
@@ -102,3 +116,5 @@ if __name__ == "__main__":
 
         print(f'Epoch: {epoch+1:02} | Time: {epoch_mins}m {epoch_secs}s')
         print(f'\tTrain Loss: {train_loss:.3f} | Train PPL: {math.exp(train_loss):7.3f}')
+
+    results = evaluate(model, train)
