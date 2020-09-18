@@ -53,8 +53,9 @@ def evaluate(model, iterator):
         for _,batch in enumerate(iterator):
             prem = batch.prem.transpose(0,1)
             hyp = batch.hyp.transpose(0,1)
+            lang = batch.lang_a
 
-            output = model(prem, hyp)
+            output = model(prem, hyp, lang)
             output = F.softmax(output)
             val, ix = output[:-1].data.topk(1)
             for i in ix:
