@@ -157,14 +157,16 @@ class Encoder(nn.Module):
     def __init__(self, vocab_size, d_model, N, heads):
         super().__init__()
         self.N = N
+        self.d_model = d_model
         self.embed = Embeder(vocab_size, d_model)
         self.pe = PositionalEncoder(d_model)
         self.layers = get_clones(EncoderLayer(d_model, heads), N)
         self.norm = Norm(d_model)
     
-    def forward(self, src, mask):
+    def forward(self, src, mask, lang_emb):
         x = self.embed(src)
         x = self.pe(x)
+        # x = torch.cat((x,lang_emb.view(x.size(0),-1,self.d_model)),1)
         for i in range(self.N):
             x = self.layers[i](x, mask)
         x = self.norm(x)
@@ -174,46 +176,45 @@ class Decoder(nn.Module):
     def __init__(self, vocab_size, d_model, N, heads):
         super().__init__()
         self.N = N
+        self.d_model = d_model
         self.embed = Embeder(vocab_size, d_model)
         self.pe = PositionalEncoder(d_model)
         self.layers = get_clones(DecoderLayer(d_model, heads), N)
         self.norm = Norm(d_model)
 
-    def forward(self, trg, e_ouputs, src_mask, trg_mask):
+    def forward(self, trg, e_ouputs, src_mask, trg_mask, lang_emb):
         x = self.embed(trg)
         x = self.pe(x)
+        # x = torch.cat((x,lang_emb.view(x.size(0),-1,self.d_model)),1)
         for i in range(self.N):
             x = self.layers[i](x, e_ouputs, src_mask, trg_mask)
         x = self.norm(x)
         return x
 
 class Transformer(nn.Module):
-    def __init__(self, src_vocab, output_dim , d_model, N, heads, input_pad):
+    def __init__(self, src_vocab, lang_vocab, output_dim , d_model, N, heads, input_pad):
         super().__init__()
+        self.lang_emb = Embeder(lang_vocab, d_model)
         self.encoder = Encoder(src_vocab, d_model, N, heads)
+        self.lang_encoder = Encoder(src_vocab, d_model, N, heads)
         self.decoder = Decoder(src_vocab, d_model, N, heads)
-        self.out = nn.Linear(d_model, output_dim)
+        self.lang = nn.Linear(d_model,d_model)
+        self.out = nn.Linear(d_model * 2, output_dim)
         self.norm = Norm(output_dim)
         self.input_pad = input_pad
     
-    def forward(self, src, trg):
+    def forward(self, src, trg, lang):
         prm_mask = self._src_mask(src)
         hyp_mask = self._src_mask(trg)
-        e_ouputs = self.encoder(src, prm_mask)
-        d_output = self.decoder(trg, e_ouputs, prm_mask, hyp_mask)
+        lang_embs = self.lang_emb(lang)
+        lang_output = self.lang(lang_embs)
+        e_ouputs = self.encoder(src, prm_mask, lang_embs)
+        d_output = self.decoder(trg, e_ouputs, prm_mask, hyp_mask, lang_embs)
         cls_output = d_output[:,0]
+        cls_output = torch.cat((cls_output, lang_output),1)
         output = self.out(cls_output)
         return output
 
     def _src_mask(self, batch):
         input_mask = (batch != self.input_pad).unsqueeze(-2)
         return input_mask
-
-        size = batch.size(1)
-        m = np.ones((1, size, size))
-        nopeak_mask = np.triu(m,k=1).astype('uint8')
-        nopeak_mask = torch.from_numpy(nopeak_mask) == 0
-
-        target_mask = target_mask & nopeak_mask
-        # target_mask = F.pad(target_mask, pad=(0, 0,target_seq.size(0)-size,0), value=False)
-        return target_mask
