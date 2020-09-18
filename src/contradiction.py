@@ -71,7 +71,7 @@ if __name__ == "__main__":
                 eos_token= '<sep>')
     
     CAT = Field(sequential=False)
-    TRG = Field(sequential=False, is_target=True)
+    TRG = Field(sequential=False, is_target=True, unk_token=None)
     fields = [('id', CAT), ('prem', TEXT), ('hyp', TEXT), ('lang_a', CAT), ('lang', CAT), ('label', TRG)]
 
     train_data, test_data = torchtext.data.TabularDataset.splits(
@@ -94,7 +94,7 @@ if __name__ == "__main__":
 
     INPUT_DIM = len(TEXT.vocab)
     NUM_LANG = len(CAT.vocab)
-    OUTPUT_DIM = len(TRG.vocab)
+    OUTPUT_DIM = 3
     d_model = 512
     heads = 8
     N = 1
