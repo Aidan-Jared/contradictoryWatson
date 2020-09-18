@@ -25,10 +25,11 @@ def train_model(model, iterator, optimizer, criterion, clip):
     for _,batch in enumerate(iterator):
         prem = batch.prem.transpose(0,1)
         hyp = batch.hyp.transpose(0,1)
+        lang = batch.lang_a
         trg = batch.label
         
         optimizer.zero_grad()
-        output = model(prem, hyp)
+        output = model(prem, hyp, lang)
 
         loss = criterion(output, trg)
         loss.backward()
@@ -67,8 +68,9 @@ if __name__ == "__main__":
                 init_token= '<cls>',
                 eos_token= '<sep>')
     
-    TRG = Field(sequential=False)
-    fields = [('id', TRG), ('prem', TEXT), ('hyp', TEXT), ('lang_a', TEXT), ('lang', TRG), ('label', TRG)]
+    CAT = Field(sequential=False)
+    TRG = Field(sequential=False, is_target=True)
+    fields = [('id', CAT), ('prem', TEXT), ('hyp', TEXT), ('lang_a', CAT), ('lang', CAT), ('label', TRG)]
 
     train_data, test_data = torchtext.data.TabularDataset.splits(
                                                     path='data/',
@@ -80,7 +82,8 @@ if __name__ == "__main__":
                                                 )
 
     TEXT.build_vocab(train_data)
-    TRG.build_vocab(train_data.label)
+    TRG.build_vocab(train_data)
+    CAT.build_vocab(train_data.lang_a)
     
     train_iter, test_iter = torchtext.data.BucketIterator.splits(
                                                                 (train_data, test_data),
@@ -88,13 +91,14 @@ if __name__ == "__main__":
                                                             )
 
     INPUT_DIM = len(TEXT.vocab)
+    NUM_LANG = len(CAT.vocab)
     OUTPUT_DIM = len(TRG.vocab)
-    d_model = 512
-    heads = 8
-    N = 5
+    d_model = 10
+    heads = 1
+    N = 1
     PAD_IDX = TEXT.vocab.stoi['<pad>']
 
-    model = Transformer(INPUT_DIM, OUTPUT_DIM, d_model, N, heads, PAD_IDX)
+    model = Transformer(INPUT_DIM, NUM_LANG, OUTPUT_DIM, d_model, N, heads, PAD_IDX)
 
     for p in model.parameters():
         if p.dim() > 1:
@@ -104,7 +108,7 @@ if __name__ == "__main__":
 
     criterion = nn.CrossEntropyLoss()
 
-    N_EPOCHS = 10
+    N_EPOCHS = 1
     CLIP = 1
 
     best_valid_loss = float('inf')
