@@ -46,21 +46,22 @@ def epoch_time(start_time, end_time):
     elapsed_secs = int(elapsed_time - (elapsed_mins * 60))
     return elapsed_mins, elapsed_secs
 
-def evaluate(model, iterator):
+def evaluate(model, example):
     model.eval()
     res = []
     with torch.no_grad():
-        for _,batch in enumerate(iterator):
-            prem = batch.prem.transpose(0,1)
-            hyp = batch.hyp.transpose(0,1)
-            lang = batch.lang_a
+        prem = example.prem.transpose(0,1)
+        hyp = example.hyp.transpose(0,1)
+        lang = example.lang_a
+        trg = example.label
 
-            output = model(prem, hyp, lang)
-            output = F.softmax(output)
-            val, ix = output[:-1].data.topk(1)
-            for i in ix:
-                res.append(TRG.vocab.itos[i])
-    return res
+        output = model(prem, hyp, lang)
+        output = F.softmax(output, dim=1)
+        val, ix = output[:-1].data.topk(1)
+        for i in ix:
+            res.append(int(TRG.vocab.itos[i]))
+    res = torch.tensor(res)
+    return trg, res
 
 if __name__ == "__main__":
     
@@ -94,8 +95,8 @@ if __name__ == "__main__":
     INPUT_DIM = len(TEXT.vocab)
     NUM_LANG = len(CAT.vocab)
     OUTPUT_DIM = len(TRG.vocab)
-    d_model = 10
-    heads = 1
+    d_model = 512
+    heads = 8
     N = 1
     PAD_IDX = TEXT.vocab.stoi['<pad>']
 
@@ -123,4 +124,7 @@ if __name__ == "__main__":
         print(f'Epoch: {epoch+1:02} | Time: {epoch_mins}m {epoch_secs}s')
         print(f'\tTrain Loss: {train_loss:.3f} | Train PPL: {math.exp(train_loss):7.3f}')
 
-    results = evaluate(model, train_iter)
+    example = next(iter(train_iter))
+    trg, pred = evaluate(model, example)
+    print('target: ', trg)
+    print('prediction: ', pred)
