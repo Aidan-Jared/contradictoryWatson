@@ -166,7 +166,7 @@ class Encoder(nn.Module):
     def forward(self, src, mask, lang_emb):
         x = self.embed(src)
         x = self.pe(x)
-        # x = torch.cat((x,lang_emb.view(x.size(0),-1,self.d_model)),1)
+        x = torch.cat((x,lang_emb.view(x.size(0),-1,self.d_model)),1)
         for i in range(self.N):
             x = self.layers[i](x, mask)
         x = self.norm(x)
@@ -185,7 +185,7 @@ class Decoder(nn.Module):
     def forward(self, trg, e_ouputs, src_mask, trg_mask, lang_emb):
         x = self.embed(trg)
         x = self.pe(x)
-        # x = torch.cat((x,lang_emb.view(x.size(0),-1,self.d_model)),1)
+        x = torch.cat((x,lang_emb.view(x.size(0),-1,self.d_model)),1)
         for i in range(self.N):
             x = self.layers[i](x, e_ouputs, src_mask, trg_mask)
         x = self.norm(x)
@@ -203,18 +203,20 @@ class Transformer(nn.Module):
         self.norm = Norm(output_dim)
         self.input_pad = input_pad
     
-    def forward(self, src, trg, lang):
-        prm_mask = self._src_mask(src)
-        hyp_mask = self._src_mask(trg)
+    def forward(self, prm, hyp, lang):
+        prm_mask = self._src_mask(prm)
+        hyp_mask = self._src_mask(hyp)
         lang_embs = self.lang_emb(lang)
         lang_output = self.lang(lang_embs)
-        e_ouputs = self.encoder(src, prm_mask, lang_embs)
-        d_output = self.decoder(trg, e_ouputs, prm_mask, hyp_mask, lang_embs)
+        e_ouputs = self.encoder(prm, prm_mask, lang_embs)
+        d_output = self.decoder(hyp, e_ouputs, prm_mask, hyp_mask, lang_embs)
         cls_output = d_output[:,0]
-        cls_output = torch.cat((cls_output, lang_output),1)
+        # cls_output = torch.cat((cls_output, lang_output),1)
         output = self.out(cls_output)
         return output
 
     def _src_mask(self, batch):
         input_mask = (batch != self.input_pad).unsqueeze(-2)
+        lang_mask = torch.ones(batch.size(0),1,1)
+        input_mask = torch.cat((input_mask, lang_mask), 2)
         return input_mask
