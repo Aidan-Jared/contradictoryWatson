@@ -207,7 +207,7 @@ class Transformer(nn.Module):
         prm_mask = self._src_mask(prm)
         hyp_mask = self._src_mask(hyp)
         lang_embs = self.lang_emb(lang)
-        lang_output = self.lang(lang_embs)
+        # lang_output = self.lang(lang_embs)
         e_ouputs = self.encoder(prm, prm_mask, lang_embs)
         d_output = self.decoder(hyp, e_ouputs, prm_mask, hyp_mask, lang_embs)
         cls_output = d_output[:,0]

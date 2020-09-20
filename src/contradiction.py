@@ -95,8 +95,8 @@ if __name__ == "__main__":
     INPUT_DIM = len(TEXT.vocab)
     NUM_LANG = len(CAT.vocab)
     OUTPUT_DIM = 3
-    d_model = 512
-    heads = 8
+    d_model = 10#512
+    heads = 1 #8
     N = 1
     PAD_IDX = TEXT.vocab.stoi['<pad>']
 
