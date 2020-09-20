@@ -46,6 +46,11 @@ def epoch_time(start_time, end_time):
     elapsed_secs = int(elapsed_time - (elapsed_mins * 60))
     return elapsed_mins, elapsed_secs
 
+def accuracy(pred, label):
+    correct = (pred == label).sum().item()
+    acc = (correct / pred.size(0)) * 100
+    return acc
+
 def evaluate(model, example):
     model.eval()
     res = []
@@ -57,11 +62,12 @@ def evaluate(model, example):
 
         output = model(prem, hyp, lang)
         output = F.softmax(output, dim=1)
-        val, ix = output[:-1].data.topk(1)
+        val, ix = output.data.topk(1)
         for i in ix:
             res.append(int(TRG.vocab.itos[i]))
     res = torch.tensor(res)
-    return trg, res
+    acc = accuracy(res, trg)
+    return acc
 
 if __name__ == "__main__":
     
@@ -125,6 +131,5 @@ if __name__ == "__main__":
         print(f'\tTrain Loss: {train_loss:.3f} | Train PPL: {math.exp(train_loss):7.3f}')
 
     example = next(iter(train_iter))
-    trg, pred = evaluate(model, example)
-    print('target: ', trg)
-    print('prediction: ', pred)
+    acc = evaluate(model, example)
+    print('accuracy: ', acc)

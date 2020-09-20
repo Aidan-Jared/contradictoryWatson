@@ -199,7 +199,7 @@ class Transformer(nn.Module):
         self.lang_encoder = Encoder(src_vocab, d_model, N, heads)
         self.decoder = Decoder(src_vocab, d_model, N, heads)
         self.lang = nn.Linear(d_model,d_model)
-        self.out = nn.Linear(d_model * 2, output_dim)
+        self.out = nn.Linear(d_model, output_dim)
         self.norm = Norm(output_dim)
         self.input_pad = input_pad
     
