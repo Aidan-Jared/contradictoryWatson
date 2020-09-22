@@ -118,8 +118,8 @@ if __name__ == "__main__":
     INPUT_DIM = len(TEXT.vocab)
     NUM_LANG = len(CAT.vocab)
     OUTPUT_DIM = 3
-    d_model = 10#512
-    heads = 1 #8
+    d_model = 512
+    heads = 8
     N = 1
     PAD_IDX = TEXT.vocab.stoi['<pad>']
 
@@ -133,7 +133,7 @@ if __name__ == "__main__":
 
     criterion = nn.CrossEntropyLoss()
 
-    N_EPOCHS = 1
+    N_EPOCHS = 10
     CLIP = 1
 
     best_valid_loss = float('inf')
