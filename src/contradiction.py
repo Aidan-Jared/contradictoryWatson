@@ -18,11 +18,13 @@ def tokenizer(doc):
     tokens = [x.text for x in nlp.tokenizer(doc) if not x.is_space]
     return tokens
 
-def train_model(model, iterator, optimizer, criterion, clip):
+def train_model(model, iterator, val_iter, optimizer, criterion, clip):
     model.train()
     epoch_loss = 0
-
-    for _,batch in enumerate(iterator):
+    epoch_acc = 0
+    res = []
+    targets = []
+    for iteration ,batch in enumerate(iterator):
         prem = batch.prem.transpose(0,1)
         hyp = batch.hyp.transpose(0,1)
         lang = batch.lang_a
@@ -38,7 +40,15 @@ def train_model(model, iterator, optimizer, criterion, clip):
         optimizer.step()
 
         epoch_loss += loss.item()
-    return epoch_loss / len(iterator)
+        
+        output = F.softmax(output, dim=1)
+        values, ix = output.data.topk(1)
+        for index, i in enumerate(ix):
+            res.append(i)
+            targets.append(trg[index])
+    epoch_acc = accuracy(torch.tensor(res), torch.tensor(targets))
+    val_acc = evaluate(model, val_iter) 
+    return epoch_loss / len(iterator), epoch_acc, val_acc
 
 def epoch_time(start_time, end_time):
     elapsed_time = end_time - start_time
@@ -54,19 +64,21 @@ def accuracy(pred, label):
 def evaluate(model, example):
     model.eval()
     res = []
+    targets = []
     with torch.no_grad():
-        prem = example.prem.transpose(0,1)
-        hyp = example.hyp.transpose(0,1)
-        lang = example.lang_a
-        trg = example.label
+        for iteration ,batch in enumerate(example):
+            prem = batch.prem.transpose(0,1)
+            hyp = batch.hyp.transpose(0,1)
+            lang = batch.lang_a
+            trg = batch.label
 
-        output = model(prem, hyp, lang)
-        output = F.softmax(output, dim=1)
-        val, ix = output.data.topk(1)
-        for i in ix:
-            res.append(int(TRG.vocab.itos[i]))
-    res = torch.tensor(res)
-    acc = accuracy(res, trg)
+            output = model(prem, hyp, lang)
+            output = F.softmax(output, dim=1)
+            val, ix = output.data.topk(1)
+            for index, i in enumerate(ix):
+                res.append(i)
+                targets.append(trg[index])
+    acc = accuracy(torch.tensor(res), torch.tensor(targets))
     return acc
 
 if __name__ == "__main__":
@@ -88,14 +100,19 @@ if __name__ == "__main__":
                                                     skip_header=True,
                                                     fields=fields
                                                 )
+    
+    train_data, val_data = train_data.split(split_ratio=.7)
 
     TEXT.build_vocab(train_data)
     TRG.build_vocab(train_data)
     CAT.build_vocab(train_data.lang_a)
+
+    BATCH_SIZE = 80
     
-    train_iter, test_iter = torchtext.data.BucketIterator.splits(
-                                                                (train_data, test_data),
-                                                                batch_sizes=(16,256)
+    train_iter, val_iter, test_iter = torchtext.data.BucketIterator.splits(
+                                                                (train_data, val_data, test_data),
+                                                                batch_size=BATCH_SIZE,
+                                                                sort=False
                                                             )
 
     INPUT_DIM = len(TEXT.vocab)
@@ -123,13 +140,10 @@ if __name__ == "__main__":
 
     for epoch in range(N_EPOCHS):
         start_time = time.time()
-        train_loss = train_model(model, train_iter, optimizer, criterion, CLIP)
+        train_loss, train_acc, val_acc = train_model(model, train_iter, val_iter, optimizer, criterion, CLIP)
         end_time = time.time()
         epoch_mins, epoch_secs = epoch_time(start_time, end_time)
 
         print(f'Epoch: {epoch+1:02} | Time: {epoch_mins}m {epoch_secs}s')
         print(f'\tTrain Loss: {train_loss:.3f} | Train PPL: {math.exp(train_loss):7.3f}')
-
-    example = next(iter(train_iter))
-    acc = evaluate(model, example)
-    print('accuracy: ', acc)
+        print(f'\tTrain acc: {train_acc:.3f}| Val acc: {val_acc:7.3f}')
