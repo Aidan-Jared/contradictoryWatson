@@ -129,7 +129,7 @@ if __name__ == "__main__":
         if p.dim() > 1:
             nn.init.xavier_uniform_(p)
 
-    optimizer = optim.Adam(model.parameters(), lr=.0001, betas=(.9,.98), eps=1e-9)
+    optimizer = optim.AdamW(model.parameters(), lr=.001)
 
     criterion = nn.CrossEntropyLoss()
 
