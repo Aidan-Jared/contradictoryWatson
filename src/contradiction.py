@@ -74,7 +74,9 @@ def evaluate(model, example):
             lang = batch.lang_a
             trg = batch.label
 
-            output = model(prem, hyp, lang)
+            inputs = torch.cat((prem, hyp[:,1:]),1)
+
+            output = model(inputs, lang)
             output = F.softmax(output, dim=1)
             val, ix = output.data.topk(1)
             for index, i in enumerate(ix):
@@ -120,9 +122,9 @@ if __name__ == "__main__":
     INPUT_DIM = len(TEXT.vocab)
     NUM_LANG = len(CAT.vocab)
     OUTPUT_DIM = 3
-    d_model = 512
+    d_model = 80 #512
     heads = 8
-    N = 10
+    N = 3
     PAD_IDX = TEXT.vocab.stoi['<pad>']
 
     model = Transformer(INPUT_DIM, NUM_LANG, OUTPUT_DIM, d_model, N, heads, PAD_IDX)
