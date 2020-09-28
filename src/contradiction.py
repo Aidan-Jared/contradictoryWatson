@@ -29,9 +29,11 @@ def train_model(model, iterator, val_iter, optimizer, criterion, clip):
         hyp = batch.hyp.transpose(0,1)
         lang = batch.lang_a
         trg = batch.label
+
+        inputs = torch.cat((prem, hyp[:,1:]),1)
         
         optimizer.zero_grad()
-        output = model(prem, hyp, lang)
+        output = model(inputs, lang)
 
         loss = criterion(output, trg)
         loss.backward()
@@ -120,7 +122,7 @@ if __name__ == "__main__":
     OUTPUT_DIM = 3
     d_model = 512
     heads = 8
-    N = 1
+    N = 10
     PAD_IDX = TEXT.vocab.stoi['<pad>']
 
     model = Transformer(INPUT_DIM, NUM_LANG, OUTPUT_DIM, d_model, N, heads, PAD_IDX)

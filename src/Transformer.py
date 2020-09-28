@@ -203,14 +203,13 @@ class Transformer(nn.Module):
         self.norm = Norm(output_dim)
         self.input_pad = input_pad
     
-    def forward(self, prm, hyp, lang):
-        prm_mask = self._src_mask(prm)
-        hyp_mask = self._src_mask(hyp)
+    def forward(self, inputs, lang):
+        inputs_mask = self._src_mask(inputs)
         lang_embs = self.lang_emb(lang)
         # lang_output = self.lang(lang_embs)
-        e_ouputs = self.encoder(prm, prm_mask, lang_embs)
-        d_output = self.decoder(hyp, e_ouputs, prm_mask, hyp_mask, lang_embs)
-        cls_output = d_output[:,0]
+        e_outputs = self.encoder(inputs, inputs_mask, lang_embs)
+        # d_output = self.decoder(hyp, e_ouputs, prm_mask, hyp_mask, lang_embs)
+        cls_output = e_outputs[:,0]
         # cls_output = torch.cat((cls_output, lang_output),1)
         output = self.out(cls_output)
         return output
