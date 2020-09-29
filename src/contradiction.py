@@ -122,9 +122,9 @@ if __name__ == "__main__":
     INPUT_DIM = len(TEXT.vocab)
     NUM_LANG = len(CAT.vocab)
     OUTPUT_DIM = 3
-    d_model = 80 #512
+    d_model = 512
     heads = 8
-    N = 3
+    N = 5
     PAD_IDX = TEXT.vocab.stoi['<pad>']
 
     model = Transformer(INPUT_DIM, NUM_LANG, OUTPUT_DIM, d_model, N, heads, PAD_IDX)
